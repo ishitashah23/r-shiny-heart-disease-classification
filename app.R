@@ -3,6 +3,7 @@
 # install.packages("shiny")
 # install.packages("shinythemes")
 # install.packages("caTools")
+# install.packages("randomForest")
 
 library(caTools)
 library(shinydashboard)
@@ -45,11 +46,7 @@ d <- transform(
   thal=as.factor(thal),
   target=as.factor(target)
 )
-# int.cols = c('sex','cp','fbs','restecg','exang','slope','ca','thal','target')
-# num.cols = c('age', 'trestbps', 'chol', 'thalach', 'oldpeak')
-# for (j in cat.cols){
-#   d[,j] = as.character(d[,j])
-# }
+
 
 #Dropping rows with nulls
 d <- d[!(d$ca %in% c(NA)),]
@@ -64,42 +61,17 @@ d$target <- relevel(d$target,"X1")
 head(d)
 str(d)
 
-# Dummy encoding
-# dummies <- dummyVars(target ~., data=d)
-# X <- data.frame(predict(dummies, newdata=d))
-# names(X) <- gsub("\\.","",names(X))
-# d <- cbind(d$target,X)
+# Renaming target variable
 names(d)[names(d) == "target"] <- "y"
-# rm(dummies,cat.cols,j,num.cols)
-# rm(cat.cols,j,num.cols)
-
-head(d)
-
-dim(d)
-head(d)
 
 #Removing null values
 d <- na.omit(d)
 
-dim(d)
 
-
-#Train and validation split 
-# set.seed(1234)
-# inTrain <- createDataPartition(y = d$y, p = 0.8, list = F)
-# train <- d[inTrain,]
-# test <- d[-inTrain,]
-# rm(inTrain)
-# as.factor(d['y'])
-
-#Baseline model
+#Prediction model
 sample = sample.split(d$y, SplitRatio = .75)
 train = subset(d, sample == TRUE)
 test  = subset(d, sample == FALSE)
-dim(train)
-dim(test)
-
-# install.packages("randomForest")
 set.seed(123)
 myModel1 <- randomForest(
   y ~ .,
@@ -107,40 +79,7 @@ myModel1 <- randomForest(
 )
 
 
-# ctrl <- trainControl(method="cv",     # cross-validation set approach to use
-#                      number=3,        # k number of times to do k-fold
-#                      classProbs = T,  # if you want probabilities
-#                      summaryFunction = twoClassSummary, # for classification
-#                      allowParallel=T)
-# myModel1 <- train(y ~ .,               # model specification
-#                   data = train,        # train set used to build model
-#                   method = "rf",      # type of model you want to build
-#                   trControl = ctrl,    # how you want to learn
-#                   # family = "binomial", # specify the type of glm
-#                   metric = "ROC",      # performance measure
-#                   na.action=na.exclude
-# )
-
-
-# pred_prob <- predict(myModel1,newdata=test,type='prob')[,1]
-# pred_prob
-# head(test,n=1)
-
-# ctrl <- trainControl(method="cv",     # cross-validation set approach to use
-#                      number=3,        # k number of times to do k-fold
-#                      classProbs = T,  # if you want probabilities
-#                      summaryFunction = twoClassSummary, # for classification
-#                      allowParallel=T)
-# myModel1 <- train(y ~ .,               # model specification
-#                   data = train,        # train set used to build model
-#                   method = "rf",      # type of model you want to build
-#                   trControl = ctrl,    # how you want to learn
-#                   # family = "binomial", # specify the type of glm
-#                   metric = "ROC",      # performance measure
-#                   na.action=na.exclude
-# )
-
-
+# Building dataset for EDA
 df = read.csv(file = 'processed.cleveland.data')
 head(df)
 
@@ -437,18 +376,18 @@ frow8 <- fluidRow(
   ),
   
   actionButton(inputId = "go", 
-               label = "Let's Predict"),
-  verbatimTextOutput("pred"),
-  verbatimTextOutput("feedback"))
+               label = "Get Prediction"),
+  htmlOutput ("pred"),
+  htmlOutput ("feedback"))
 
 
-header <- dashboardHeader(title = "Rshiny Project")  
+header <- dashboardHeader(title = "Heart Disease Classification")  
 sidebar <- dashboardSidebar(
   sidebarMenu(
-    menuItem("EDA-1", tabName = "EDA-1", icon = icon("dashboard")),
-    menuItem("EDA-2", tabName = "EDA-2", icon = icon("dashboard")),
-    menuItem("EDA-3", tabName = "EDA-3", icon = icon("dashboard")),
-    menuItem("Prediction", tabName = "Prediction", icon = icon("dashboard"))
+    menuItem("EDA-1", tabName = "EDA-1", icon = icon("chart-bar")),
+    menuItem("EDA-2", tabName = "EDA-2", icon = icon("chart-line")),
+    menuItem("EDA-3", tabName = "EDA-3", icon = icon("columns")),
+    menuItem("Prediction", tabName = "Prediction", icon = icon("bullseye"))
   )
 )
 
@@ -459,7 +398,7 @@ body <- dashboardBody(tabItems(tabItem(tabName = "EDA-1",frow1,frow2),
                                tabItem(tabName = "Prediction",frow8)))
 
 
-ui <- dashboardPage(title = 'This is my Page title',header, sidebar, body, skin='red')
+ui <- dashboardPage(title = 'Application for Heart Disease Classification',header, sidebar, body, skin='red')
 
 
 server = function(input, output) {
@@ -573,19 +512,6 @@ server = function(input, output) {
                               'thalach','exang','oldpeak','slope','ca','thal')
     cat.cols = c('sex','cp','fbs','restecg','exang','slope','ca','thal')
     sample.obs <- data.frame(sample.obs)
-    # num.cols = c('age', 'trestbps', 'chol', 'thalach', 'oldpeak')
-    # for (j in num.cols){
-    # sample.obs[,j] = as.numeric(sample.obs[,j])
-    # }
-    # for (j in cat.cols){
-    # sample.obs[,j] = as.character(sample.obs[,j])
-    # sample.obs[,j] <- factor(sample.obs[,j], levels = levels(d$j))    
-    # }
-    # sample.obs$sex <- as.character(sample.obs$sex)
-    # dummies <- dummyVars(y ~., data=d)
-    # sample.obs <- data.frame(predict(dummies, newdata=sample.obs))
-    # sample.obs <- rbind(train[1,1:13 ] , sample.obs)
-    # sample.obs <- sample.obs[-1,]
     sample.obs <- transform(
       sample.obs,
       age=as.integer(age),
@@ -602,23 +528,20 @@ server = function(input, output) {
       ca=factor(ca, levels = levels(d$ca)),
       thal=factor(thal, levels = levels(d$thal))
     )
-    # pred_prob <- predict(myModel1,newdata=sample.obs,type='prob')[,1]
-    # predict(myModel1,newdata=sample.obs,type='prob')[,1]
-    # sample.obs
-    # pred_prob = predict(myModel1, newdata=sample.obs)
     predict(myModel1, newdata=sample.obs,type='prob')[,1]
   })
   
   
   # output$pred <-
-  observeEvent(input$go,output$pred <- renderPrint({
+  observeEvent(input$go,output$pred <- renderUI({
     # predict(myModel1, newdata=ee(),type='prob')[,1]
-    ee()
+    str1 <- paste("<br>","<b>","Based on your current reports, you have a ", ee()*100,"% probability of having a heart disease.",sep="","<b>")
+    HTML(paste(str1))
   }))
   
-  output$feedback <- renderPrint({
+  output$feedback <- renderUI({
     if (ee()>0.5){
-      "You have a high risk of having a heart disease. Please see your doctor for an immediate follow-up consultation. Meanwhile inculcating some habits like eating less fatty foods, avoiding salt and exercising daily may help alleviate some immediate symptoms"
+      "We recommend you to see your doctor for an immediate follow-up consultation. Meanwhile inculcating some habits like eating less fatty foods, avoiding salt and exercising daily may help alleviate some immediate symptoms"
     } else{
       "It seems like you are fit and have lower chances of having a heart disease. Continue healthy eating habits with light exercise everyday to keep your health in check. Good job!"
     }

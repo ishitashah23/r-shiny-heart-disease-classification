@@ -51,6 +51,7 @@ d <- transform(
 #Dropping rows with nulls
 d <- d[!(d$ca %in% c(NA)),]
 d <- d[!(d$thalach %in% c(NA)),]
+head(d)
 
 table(d['target'])
 d[,'target'] <- ifelse(d[,'target']==0,0,1)
@@ -73,11 +74,10 @@ sample = sample.split(d$y, SplitRatio = .75)
 train = subset(d, sample == TRUE)
 test  = subset(d, sample == FALSE)
 set.seed(123)
-myModel1 <- randomForest(
-  y ~ .,
+myModel1 <- glm(
+  y ~ ., family = 'binomial',
   data=train
 )
-
 
 # Building dataset for EDA
 df = read.csv(file = 'processed.cleveland.data')
@@ -528,7 +528,7 @@ server = function(input, output) {
       ca=factor(ca, levels = levels(d$ca)),
       thal=factor(thal, levels = levels(d$thal))
     )
-    predict(myModel1, newdata=sample.obs,type='prob')[,1]
+    round(1-predict(myModel1, newdata=sample.obs,type='response'),digits = 2)
   })
   
   
@@ -548,7 +548,6 @@ server = function(input, output) {
   })
   
 }
-
 
 shinyApp(ui, server)
 # rsconnect::deployApp(server='shinyapps.io')
